@@ -1,12 +1,12 @@
 // ==UserScript==
-// @id             iitc-plugin-portals-list@teo96
+// @id             iitc-plugin-portals-list hack by @langs
 // @name           IITC plugin: show list of portals
 // @category       Info
-// @version        0.2.0.20141117.164706
+// @version        0.3.0.20141119.235606
 // @namespace      https://github.com/jonatkins/ingress-intel-total-conversion
-// @updateURL      https://secure.jonatkins.com/iitc/test/plugins/portals-list.meta.js
-// @downloadURL    https://secure.jonatkins.com/iitc/test/plugins/portals-list.user.js
-// @description    [jonatkins-test-2014-11-17-164706] Display a sortable list of all visible portals with full details about the team, resonators, links, etc.
+// @updateURL      https://raw.githubusercontent.com/im461n3/portallist/master/portals-list.user.js
+// @downloadURL    https://raw.githubusercontent.com/im461n3/portallist/master/portals-list.user.js
+// @description    [hack-test-2014-11-19-235606] Display a sortable list of all visible portals with full details about the team, resonators, links, etc.
 // @include        https://www.ingress.com/intel*
 // @include        http://www.ingress.com/intel*
 // @match          https://www.ingress.com/intel*
@@ -362,6 +362,7 @@ window.plugin.portalslist.portalTable = function(sortBy, sortOrder, filter) {
   var stamp = new Date().getTime();
 
   html+='<div><aside><a download="Ingress Export.csv" href="' + window.plugin.portalslist.export('csv') + '">Export as .csv</a></aside>'
+      +'<aside><a download="Ingress Export.kml" href="' + window.plugin.portalslist.export('kml') + '">Export as .kml</a></aside>'
       + '</div>';
   container.append(html);
 
@@ -409,7 +410,7 @@ var setup =  function() {
 
   $("<style>")
     .prop("type", "text/css")
-    .html("@@INCLUDESTRING:plugins/portals-list.css@@")
+    .html("#portalslist.mobile {\n  background: transparent;\n  border: 0 none !important;\n  height: 100% !important;\n  width: 100% !important;\n  left: 0 !important;\n  top: 0 !important;\n  position: absolute;\n  overflow: auto;\n}\n\n#portalslist table {\n  margin-top: 5px;\n  border-collapse: collapse;\n  empty-cells: show;\n  width: 100%;\n  clear: both;\n}\n\n#portalslist table td, #portalslist table th {\n  background-color: #1b415e;\n  border-bottom: 1px solid #0b314e;\n  color: white;\n  padding: 3px;\n}\n\n#portalslist table th {\n  text-align: center;\n}\n\n#portalslist table .alignR {\n  text-align: right;\n}\n\n#portalslist table.portals td {\n  white-space: nowrap;\n}\n\n#portalslist table th.sortable {\n  cursor: pointer;\n}\n\n#portalslist table .portalTitle {\n  min-width: 120px !important;\n  max-width: 240px !important;\n  overflow: hidden;\n  white-space: nowrap;\n  text-overflow: ellipsis;\n}\n\n#portalslist .sorted {\n  color: #FFCE00;\n}\n\n#portalslist table.filter {\n  table-layout: fixed;\n  cursor: pointer;\n  border-collapse: separate;\n  border-spacing: 1px;\n}\n\n#portalslist table.filter th {\n  text-align: left;\n  padding-left: 0.3em;\n  overflow: hidden;\n  text-overflow: ellipsis;\n}\n\n#portalslist table.filter td {\n  text-align: right;\n  padding-right: 0.3em;\n  overflow: hidden;\n  text-overflow: ellipsis;\n}\n\n#portalslist .filterNeu {\n  background-color: #666;\n}\n\n#portalslist table tr.res td, #portalslist .filterRes {\n  background-color: #005684;\n}\n\n#portalslist table tr.enl td, #portalslist .filterEnl {\n  background-color: #017f01;\n}\n\n#portalslist table tr.none td {\n  background-color: #000;\n}\n\n#portalslist .disclaimer {\n  margin-top: 10px;\n  font-size: 10px;\n}\n\n#portalslist.mobile table.filter tr {\n  display: block;\n  text-align: center;\n}\n#portalslist.mobile table.filter th, #portalslist.mobile table.filter td {\n  display: inline-block;\n  width: 22%;\n}\n\n")
     .appendTo("head");
 
 }
@@ -424,6 +425,9 @@ window.plugin.portalslist.export = function(fileformat){
     switch (fileformat) {
         case 'csv':
             file = window.plugin.portalslist.exportCSV(window.plugin.portalslist.sortBy, window.plugin.portalslist.sortOrder,window.plugin.portalslist.filter);
+            break;
+        case 'kml':
+            file = window.plugin.portalslist.exportKML(window.plugin.portalslist.sortBy, window.plugin.portalslist.sortOrder,window.plugin.portalslist.filter);
             break;
     }
 
@@ -444,6 +448,9 @@ window.plugin.portalslist.exportCSV = function(sortBy, sortOrder, filter){
     var sortField = window.plugin.portalslist.fields[sortBy];
     var csv = '';
     var team = ['NEU', 'RES', 'ENL'];
+
+    //fixes china coor
+    var latlng = window.plugin.fixChinaOffset.WGS84transformer.prototype.transform(obj.portal._latlng.lat, obj.portal._latlng.lng);
 
     portals.sort(function(a, b) {
         var valueA = a.sortValues[sortBy];
@@ -479,14 +486,79 @@ window.plugin.portalslist.exportCSV = function(sortBy, sortOrder, filter){
         csv += obj.sortValues[5]+'\t';
         csv += obj.sortValues[6]+'\t';
         csv += obj.sortValues[7]+'\t';
-        csv += obj.portal._latlng.lat+'\t';
-        csv += obj.portal._latlng.lng+'\t';
+        csv += latlng.lat+'\t';
+        csv += latlng.lng+'\t';
         csv += 'https://www.ingress.com/intel?ll='+obj.portal._latlng.lat+','+obj.portal._latlng.lng+'&z=17&pll='+obj.portal._latlng.lat+','+obj.portal._latlng.lng;
         csv += '\n';
     })
 
     return csv;
 }
+
+    window.plugin.portalslist.exportKML = function(sortBy, sortOrder, filter){
+        // save the sortBy/sortOrder/filter
+        window.plugin.portalslist.sortBy = sortBy;
+        window.plugin.portalslist.sortOrder = sortOrder;
+        window.plugin.portalslist.filter = filter;
+
+        // all portals informations are avalaible in the listPortals array
+        var portals = window.plugin.portalslist.listPortals;
+        var sortField = window.plugin.portalslist.fields[sortBy];
+        var kml = '';
+        var team = ['NEU', 'RES', 'ENL'];
+
+        portals.sort(function(a, b) {
+            var valueA = a.sortValues[sortBy];
+            var valueB = b.sortValues[sortBy];
+
+            if(sortField.sort) {
+                return sortOrder * sortField.sort(valueA, valueB, a.portal, b.portal);
+            }
+
+            return sortOrder *
+                (valueA < valueB ? -1 :
+                        valueA > valueB ?  1 :
+                    0);
+        });
+
+        if(filter !== 0) {
+            portals = portals.filter(function(obj) {
+                return filter < 0
+                    ? obj.portal.options.team+1 != -filter
+                    : obj.portal.options.team+1 == filter;
+            });
+        }
+
+        //headers
+        kml = '<?xml version="1.0" encoding="UTF-8"?><kml xmlns="http://www.opengis.net/kml/2.2"><Document>\n'
+            + '<name>Ingress Export</name><description><![CDATA[Ingress Portals\nExported from IITC using the Portals-list plugin\n' + new Date().toLocaleString() + ']]></description>';
+
+        // define colored markers as style0 (neutral), style1 (Resistance), style2 (Enlight)
+        kml += '<Style id="style1"><IconStyle><Icon><href>http://maps.gstatic.com/mapfiles/ms2/micons/blue-dot.png</href></Icon></IconStyle></Style>'
+            + '<Style id="style2"><IconStyle><Icon><href>http://maps.gstatic.com/mapfiles/ms2/micons/green-dot.png</href></Icon></IconStyle></Style>'
+            + '<Style id="style0"><IconStyle><Icon><href>http://maps.gstatic.com/mapfiles/ms2/micons/pink-dot.png</href></Icon></IconStyle></Style>\n';
+
+        portals.forEach(function(obj, i) {
+            // add the portal in the kml file only if part of the filter choice
+            // description contain picture of the portal, address and link to the Intel map
+            // fixes china coor
+            var latlng = window.plugin.fixChinaOffset.WGS84transformer.prototype.transform(obj.portal._latlng.lat, obj.portal._latlng.lng);
+            var description = '<![CDATA['
+                + '<div><table><tr><td><img style="width:100px" src="' + obj.portal.options.data.image + '"></td><td>'
+                + '<br><a href="https://ingress.com/intel?latE6=' + obj.portal._latlng.lat*1E6 + '&lngE6=' + obj.portal._latlng.lng*1E6 + '&z=17">Link to Intel Map</a></td></tr></table>'
+                + ']]>';
+
+            kml += '<Placemark><name>L' + Math.floor(obj.sortValues[1]) + ' - ' + obj.sortValues[0] + '</name>'
+                + '<description>' +  description + '</description>'
+                + '<styleUrl>#style' + team[obj.sortValues[2]] + '</styleUrl>';
+
+            //coordinates
+            kml += '<Point><coordinates>' + latlng.lng + ',' + latlng.lat + ',0</coordinates></Point>';
+            kml += '</Placemark>\n';
+        });
+        kml += '</Document></kml>';
+        return kml;
+    }
 
 
 
