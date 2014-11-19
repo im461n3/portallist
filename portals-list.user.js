@@ -448,9 +448,7 @@ window.plugin.portalslist.exportCSV = function(sortBy, sortOrder, filter){
     var sortField = window.plugin.portalslist.fields[sortBy];
     var csv = '';
     var team = ['NEU', 'RES', 'ENL'];
-
-    //fixes china coor
-    var latlng = window.plugin.fixChinaOffset.WGS84transformer.prototype.transform(obj.portal._latlng.lat, obj.portal._latlng.lng);
+    var latlng = '';
 
     portals.sort(function(a, b) {
         var valueA = a.sortValues[sortBy];
@@ -478,6 +476,8 @@ window.plugin.portalslist.exportCSV = function(sortBy, sortOrder, filter){
     csv += 'Portal\tLevel\tTeam\tEnergy\tRes\tLinks\tFields\tAP Gain\tlat\tlong\tPortal link\n';
 
     portals.forEach(function(obj, i) {
+        //fixes china coor
+        latlng = window.plugin.fixChinaOffset.WGS84transformer.prototype.transform(obj.portal._latlng.lat, obj.portal._latlng.lng);
         csv += obj.sortValues[0]+'\t';
         csv += obj.sortValues[1]+'\t';
         csv += team[obj.sortValues[2]]+'\t';
@@ -506,6 +506,7 @@ window.plugin.portalslist.exportCSV = function(sortBy, sortOrder, filter){
         var sortField = window.plugin.portalslist.fields[sortBy];
         var kml = '';
         var team = ['NEU', 'RES', 'ENL'];
+        var latlng;
 
         portals.sort(function(a, b) {
             var valueA = a.sortValues[sortBy];
@@ -542,7 +543,7 @@ window.plugin.portalslist.exportCSV = function(sortBy, sortOrder, filter){
             // add the portal in the kml file only if part of the filter choice
             // description contain picture of the portal, address and link to the Intel map
             // fixes china coor
-            var latlng = window.plugin.fixChinaOffset.WGS84transformer.prototype.transform(obj.portal._latlng.lat, obj.portal._latlng.lng);
+            latlng = window.plugin.fixChinaOffset.WGS84transformer.prototype.transform(obj.portal._latlng.lat, obj.portal._latlng.lng);
             var description = '<![CDATA['
                 + '<div><table><tr><td><img style="width:100px" src="' + obj.portal.options.data.image + '"></td><td>'
                 + '<br><a href="https://ingress.com/intel?latE6=' + obj.portal._latlng.lat*1E6 + '&lngE6=' + obj.portal._latlng.lng*1E6 + '&z=17">Link to Intel Map</a></td></tr></table>'
