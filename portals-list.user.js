@@ -69,6 +69,16 @@ window.plugin.portalslist.fields = [
         .addClass("portalTitle");
     }
   },
+    {
+        title: "Owner",
+        value: function(portal) { return window.getPortalOwner(portal.options.guid); },
+        format: function(cell, portal, value) {
+            $(cell)
+                .css('background-color', COLORS_LVL[value])
+                .text(value);
+        },
+        defaultOrder: -1,
+    },
   {
     title: "Level",
     value: function(portal) { return portal.options.data.level; },
@@ -154,6 +164,18 @@ window.plugin.portalslist.fields = [
   },
 ];
 
+window.getPortalOwner = function(guid) {
+    var owner;
+    if (guid && !portalDetail.isFresh(guid)) {
+        portalDetail.request(guid);
+    }
+    var d = portalDetail.get(guid);
+    if(d){
+        owner = d.owner;
+    }
+    return owner;
+}
+
 //fill the listPortals array with portals avaliable on the map (level filtered portals will not appear in the table)
 window.plugin.portalslist.getPortals = function() {
   //filter : 0 = All, 1 = Neutral, 2 = Res, 3 = Enl, -x = all but x
@@ -218,7 +240,7 @@ window.plugin.portalslist.displayPL = function() {
   window.plugin.portalslist.resP = 0;
   window.plugin.portalslist.neuP = 0;
   window.plugin.portalslist.filter = 0;
-
+  console.log('diplay_start');
   if (window.plugin.portalslist.getPortals()) {
     list = window.plugin.portalslist.portalTable(window.plugin.portalslist.sortBy, window.plugin.portalslist.sortOrder,window.plugin.portalslist.filter);
   } else {
@@ -311,6 +333,9 @@ window.plugin.portalslist.portalTable = function(sortBy, sortOrder, filter) {
         cell.textContent = window.plugin.portalslist.enlP + ' (' + Math.round(window.plugin.portalslist.enlP/length*100) + '%)';
     }
   });
+
+  //add the owner filter
+
 
   table = document.createElement('table');
   table.className = 'portals';
@@ -479,17 +504,17 @@ window.plugin.portalslist.exportCSV = function(sortBy, sortOrder, filter){
         //fixes china coor
         latlng = window.plugin.fixChinaOffset.WGS84transformer.prototype.transform(obj.portal._latlng.lat, obj.portal._latlng.lng);
         csv += obj.sortValues[0]+'\t';
-        csv += obj.sortValues[1]+'\t';
-        csv += team[obj.sortValues[2]]+'\t';
-        csv += obj.sortValues[3]+'\t';
+        csv += obj.sortValues[2]+'\t';
+        csv += team[obj.sortValues[3]]+'\t';
         csv += obj.sortValues[4]+'\t';
         csv += obj.sortValues[5]+'\t';
         csv += obj.sortValues[6]+'\t';
         csv += obj.sortValues[7]+'\t';
+        csv += obj.sortValues[8]+'\t';
         csv += latlng.lat+'\t';
         csv += latlng.lng+'\t';
         csv += 'https://www.ingress.com/intel?ll='+obj.portal._latlng.lat+','+obj.portal._latlng.lng+'&z=17&pll='+obj.portal._latlng.lat+','+obj.portal._latlng.lng;
-        csv += '\n';
+        csv += '\r\n';
     })
 
     return csv;
@@ -549,7 +574,7 @@ window.plugin.portalslist.exportCSV = function(sortBy, sortOrder, filter){
                 + '<br><a href="https://ingress.com/intel?latE6=' + obj.portal._latlng.lat*1E6 + '&lngE6=' + obj.portal._latlng.lng*1E6 + '&z=17">Link to Intel Map</a></td></tr></table>'
                 + ']]>';
 
-            kml += '<Placemark><name>L' + Math.floor(obj.sortValues[1]) + ' - ' + obj.sortValues[0] + '</name>'
+            kml += '<Placemark><name>' + obj.sortValues[0] + '</name>'
                 + '<description>' +  description + '</description>'
                 + '<styleUrl>#style' + team[obj.sortValues[2]] + '</styleUrl>';
 
