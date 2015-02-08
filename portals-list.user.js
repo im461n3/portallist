@@ -2,11 +2,11 @@
 // @id             iitc-plugin-portals-list hack by @langs
 // @name           IITC plugin: show list of portals
 // @category       Info
-// @version        0.3.2.20150204.001106
+// @version        0.3.3.20150208.152210
 // @namespace      https://github.com/jonatkins/ingress-intel-total-conversion
 // @updateURL      https://raw.githubusercontent.com/im461n3/portallist/master/portals-list.user.js
 // @downloadURL    https://raw.githubusercontent.com/im461n3/portallist/master/portals-list.user.js
-// @description    [hack-test-2015-02-04-001106] Display a sortable list of all visible portals with full details about the team, resonators, links, etc.
+// @description    [hack-test-2015-02-08-152210] Display a sortable list of all visible portals with full details about the team, resonators, links, etc.
 // @include        https://www.ingress.com/intel*
 // @include        http://www.ingress.com/intel*
 // @match          https://www.ingress.com/intel*
@@ -386,8 +386,9 @@ window.plugin.portalslist.portalTable = function(sortBy, sortOrder, filter) {
   var html='';
   var stamp = new Date().getTime();
 
-  html+='<div><aside><a download="Ingress Export.csv" href="' + window.plugin.portalslist.export('csv') + '">Export as .csv</a></aside>'
-      +'<aside><a download="Ingress Export.kml" href="' + window.plugin.portalslist.export('kml') + '">Export as .kml</a></aside>'
+  html+='<div><aside><a download="Ingress_Export.csv" href="' + window.plugin.portalslist.export('csv') + '">Export as .csv</a></aside>'
+      +'<aside><a download="Ingress_Export.kml" href="' + window.plugin.portalslist.export('kml') + '">Export as .kml</a></aside>'
+      +'<aside><a download="Ingress_Export_fixes_china_offsets.kml" href="' + window.plugin.portalslist.export('kmlex') + '">Export as .kml (fixes china offsets)</a></aside>'
       + '</div>';
   container.append(html);
 
@@ -452,7 +453,10 @@ window.plugin.portalslist.export = function(fileformat){
             file = window.plugin.portalslist.exportCSV(window.plugin.portalslist.sortBy, window.plugin.portalslist.sortOrder,window.plugin.portalslist.filter);
             break;
         case 'kml':
-            file = window.plugin.portalslist.exportKML(window.plugin.portalslist.sortBy, window.plugin.portalslist.sortOrder,window.plugin.portalslist.filter);
+            file = window.plugin.portalslist.exportKML(window.plugin.portalslist.sortBy, window.plugin.portalslist.sortOrder,window.plugin.portalslist.filter, false);
+            break;
+        case 'kmlex':
+            file = window.plugin.portalslist.exportKML(window.plugin.portalslist.sortBy, window.plugin.portalslist.sortOrder,window.plugin.portalslist.filter, true);
             break;
     }
 
@@ -501,7 +505,7 @@ window.plugin.portalslist.exportCSV = function(sortBy, sortOrder, filter){
     csv += 'Portal\tLevel\tTeam\tEnergy\tRes\tLinks\tFields\tAP Gain\tlat\tlong\tPortal link\n';
 
     portals.forEach(function(obj, i) {
-        //fixes china coor
+        //fixes china coordinate
         latlng = window.plugin.fixChinaOffset.WGS84transformer.prototype.transform(obj.portal._latlng.lat, obj.portal._latlng.lng);
         csv += obj.sortValues[0]+'\t';
         csv += obj.sortValues[2]+'\t';
@@ -520,7 +524,7 @@ window.plugin.portalslist.exportCSV = function(sortBy, sortOrder, filter){
     return csv;
 }
 
-    window.plugin.portalslist.exportKML = function(sortBy, sortOrder, filter){
+    window.plugin.portalslist.exportKML = function(sortBy, sortOrder, filter, isFix){
         // save the sortBy/sortOrder/filter
         window.plugin.portalslist.sortBy = sortBy;
         window.plugin.portalslist.sortOrder = sortOrder;
@@ -560,15 +564,20 @@ window.plugin.portalslist.exportCSV = function(sortBy, sortOrder, filter){
             + '<name>Ingress Export</name><description><![CDATA[Ingress Portals\nExported from IITC using the Portals-list plugin\n' + new Date().toLocaleString() + ']]></description>';
 
         // define colored markers as style0 (neutral), style1 (Resistance), style2 (Enlight)
-        kml += '<Style id="style1"><IconStyle><Icon><href>http://maps.gstatic.com/mapfiles/ms2/micons/blue-dot.png</href></Icon></IconStyle></Style>'
-            + '<Style id="style2"><IconStyle><Icon><href>http://maps.gstatic.com/mapfiles/ms2/micons/green-dot.png</href></Icon></IconStyle></Style>'
-            + '<Style id="style0"><IconStyle><Icon><href>http://maps.gstatic.com/mapfiles/ms2/micons/pink-dot.png</href></Icon></IconStyle></Style>\n';
+        kml += '<Style id="styleRES"><IconStyle><Icon><href>http://maps.gstatic.com/mapfiles/ms2/micons/blue-dot.png</href></Icon></IconStyle></Style>'
+            + '<Style id="styleENL"><IconStyle><Icon><href>http://maps.gstatic.com/mapfiles/ms2/micons/green-dot.png</href></Icon></IconStyle></Style>'
+            + '<Style id="styleNEU"><IconStyle><Icon><href>http://maps.gstatic.com/mapfiles/ms2/micons/pink-dot.png</href></Icon></IconStyle></Style>\n';
 
         portals.forEach(function(obj, i) {
             // add the portal in the kml file only if part of the filter choice
             // description contain picture of the portal, address and link to the Intel map
-            // fixes china coor
-            latlng = window.plugin.fixChinaOffset.WGS84transformer.prototype.transform(obj.portal._latlng.lat, obj.portal._latlng.lng);
+
+            if(isFix){
+                // fixes china coordinate
+                latlng = window.plugin.fixChinaOffset.WGS84transformer.prototype.transform(obj.portal._latlng.lat, obj.portal._latlng.lng);
+            }else{
+                latlng = {lat: obj.portal._latlng.lat, lng: obj.portal._latlng.lng};
+            }
             var description = '<![CDATA['
                 + '<div><table><tr><td><img style="width:100px" src="' + obj.portal.options.data.image + '"></td><td>'
                 + '<br><a href="https://ingress.com/intel?latE6=' + obj.portal._latlng.lat*1E6 + '&lngE6=' + obj.portal._latlng.lng*1E6 + '&z=17">Link to Intel Map</a></td></tr></table>'
@@ -576,7 +585,7 @@ window.plugin.portalslist.exportCSV = function(sortBy, sortOrder, filter){
 
             kml += '<Placemark><name>' + obj.sortValues[0] + '</name>'
                 + '<description>' +  description + '</description>'
-                + '<styleUrl>#style' + team[obj.sortValues[2]] + '</styleUrl>';
+                + '<styleUrl>#style' + team[obj.sortValues[3]] + '</styleUrl>';
 
             //coordinates
             kml += '<Point><coordinates>' + latlng.lng + ',' + latlng.lat + ',0</coordinates></Point>';
